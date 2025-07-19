@@ -1,0 +1,6 @@
+{
+  "name": "Copy of Reinforcement Learning Agent Dashboard",
+  "description": "An interactive dashboard to visualize and simulate the behavior and internal state of a configurable Reinforcement Learning agent. Observe its emotions, drives, and goals as it learns and interacts with its environment.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
