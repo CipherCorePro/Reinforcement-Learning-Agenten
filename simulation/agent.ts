@@ -302,17 +302,24 @@ export class KI_Agent {
         const { valence } = this.emotion_model.get_emotions();
         let { curiosity, understanding, frustration } = this.self_model.drives;
 
+        // Natural decay of frustration
+        frustration *= 0.98;
+
         curiosity += intrinsic_reward * 0.1 + (Math.random() - 0.5) * 0.01;
         understanding += intrinsic_reward * 0.05 + (Math.random() - 0.5) * 0.005;
 
-        if (valence < -0.3) {
-            frustration += 0.03;
+        // Balanced frustration changes based on valence
+        if (valence < -0.5) {
+            frustration += 0.04; // Increase on strong negative experience
+        } else if (valence > 0.2) {
+            frustration -= 0.05; // Decrease significantly on positive experience
         } else {
-            frustration -= 0.01;
+            frustration -= 0.01; // Slowly decrease in neutral territory
         }
         
-        if (this.lastReward < -0.8) {
-             frustration += 0.05;
+        // Drastic frustration reduction upon reaching a goal
+        if (this.lastReward > 5) { // Assuming goal reward is high (e.g., 10)
+             frustration *= 0.5;
         }
 
         this.self_model.update_drives({ curiosity, understanding, frustration });
@@ -330,11 +337,14 @@ export class KI_Agent {
         const { frustration } = this.self_model.drives;
         const currentGoal = this.self_model.current_goal_key;
 
-        if (currentGoal === "explore" && frustration > 0.8) {
+        // Enter 'reduce_frustration' state if threshold is crossed
+        if (currentGoal === "explore" && frustration > this.config.frustration_threshold) {
             this.self_model.update_goal("reduce_frustration", null);
             this.log(`Agent ${this.id} is frustrated! Goal: Reduce Frustration`, 'rule-engine');
             this.logEvent('goal_change', `Goal set to 'Reduce Frustration'`, step);
-        } else if (currentGoal === "reduce_frustration" && frustration < 0.2) {
+        } 
+        // Exit 'reduce_frustration' state once it's low enough (less sticky)
+        else if (currentGoal === "reduce_frustration" && frustration < 0.4) {
             this.self_model.update_goal("explore", "Find a new state");
             this.log(`Agent ${this.id} feels better. Goal: Explore`, 'rule-engine');
             this.logEvent('goal_change', `Goal set to 'Explore'`, step);
